@@ -1,3 +1,5 @@
+// app/reset-password/page.tsx
+
 "use client"
 
 import type React from "react"
@@ -8,8 +10,8 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CheckCircle, AlertCircle } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useRouter, useSearchParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client" // Usar o cliente padronizado
+import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 
 export default function ResetPasswordPage() {
@@ -19,12 +21,18 @@ export default function ResetPasswordPage() {
   const [isValidSession, setIsValidSession] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
 
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     const checkSession = async () => {
+      // Se o cliente Supabase não for inicializado, não podemos verificar a sessão.
+      if (!supabase) {
+        console.error("Supabase client not initialized. Cannot check session.");
+        setIsValidSession(false);
+        setIsChecking(false);
+        return;
+      }
       try {
         const {
           data: { session },
@@ -48,10 +56,19 @@ export default function ResetPasswordPage() {
     }
 
     checkSession()
-  }, [supabase.auth])
+  }, [supabase])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!supabase) {
+      toast({
+        title: "Erro de configuração",
+        description: "O cliente Supabase não foi inicializado.",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (password !== confirmPassword) {
       toast({
@@ -85,7 +102,6 @@ export default function ResetPasswordPage() {
         description: "Você será redirecionado para o dashboard.",
       })
 
-      // Redirecionar para o dashboard após sucesso
       setTimeout(() => {
         router.push("/dashboard")
       }, 2000)
@@ -149,7 +165,6 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Header */}
         <div className="text-center space-y-4">
           <Link href="/home" className="inline-flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
@@ -163,7 +178,6 @@ export default function ResetPasswordPage() {
           </div>
         </div>
 
-        {/* Form */}
         <Card className="p-8 shadow-xl">
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="space-y-2">
@@ -199,7 +213,6 @@ export default function ResetPasswordPage() {
           </form>
         </Card>
 
-        {/* Footer */}
         <div className="text-center text-sm text-gray-500">
           <Link href="/home" className="hover:text-blue-600">
             ← Voltar para a página inicial
